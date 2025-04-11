@@ -19,6 +19,8 @@ export default function Home() {
         body: formData,
       });
 
+      console.log("response: ",response);
+
       if (!response.ok) {
         const errorText = await response.text(); // Get the error message
         console.error('Server Error:', errorText);
