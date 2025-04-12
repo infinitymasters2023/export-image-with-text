@@ -7,6 +7,21 @@ import JSZip from "jszip";
 import { writeFile } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
+import { uploadBufferToAzure } from "@/app/lib/azureBlob";
+
+import sql from "mssql";
+
+const config = {
+  user: "azure-sa1",
+  password: "ugsf127ghFHSD86dfsDS",
+  server: "192.168.1.67",
+  database: "iapl",
+  options: {
+    encrypt: true,
+    trustServerCertificate: true,
+  },
+  pool: { max: 10, min: 0, idleTimeoutMillis: 30000 },
+};
 
 async function safeLoadImageFromUrl(url: string): Promise<Image | null> {
   try {
@@ -22,6 +37,8 @@ async function safeLoadImageFromUrl(url: string): Promise<Image | null> {
 
 export async function POST(req: NextRequest) {
   try {
+    await sql.connect(config);
+
     const formData = await req.formData();
     const file = formData.get("file") as File;
     if (!file) {
@@ -145,6 +162,59 @@ export async function POST(req: NextRequest) {
 
           const imageFileName = `Image_${index + 1}.jpeg`;
           row.ImageFileName = imageFileName;
+
+          try {
+            // const imageUrl = await uploadBufferToAzure(buffer1, imageFileName, "image/jpeg");
+
+            const result = await sql.query`
+          INSERT INTO Iapl_Generated_Images_For_Amazon (
+            ProductImageUrl,
+            LogoUrl,
+            PlanName,
+            PriceRange,
+            Brand,
+            PlanColor,
+            PlanBackgroundColor,
+            PriceRangeBackgroundColor,
+            BrandBackgroundColor,
+            BrandColor,
+            PriceRangeColor,
+            PlanFontSize,
+            BrandFontSize,
+            PriceRangeFontSize,
+            PlanFontWeight,
+            BrandFontWeight,
+            PriceRangeFontWeight,
+            FontFamily,
+            UploadedImageUrl
+          ) 
+          VALUES (
+            ${row.ProductImageUrl},
+            ${row.LogoUrl},
+            ${row.PlanName},
+            ${row.PriceRange},
+            ${row.Brand},
+            ${row.PlanColor},
+            ${row.PlanBackgroundColor},
+            ${row.PriceRangeBackgroundColor},
+            ${row.BrandBackgroundColor},
+            ${row.BrandColor},
+            ${row.PriceRangeColor},
+            ${row.PlanFontSize},
+            ${row.BrandFontSize},
+            ${row.PriceRangeFontSize},
+            ${row.PlanFontWeight},
+            ${row.BrandFontWeight},
+            ${row.PriceRangeFontWeight},
+            ${row.FontFamily},
+            ${imageFileName} -- Assuming this is the URL or path to the image
+          )
+        `;
+
+            console.log("Image uploaded to Azure:", index + 1);
+          } catch (uploadErr: any) {
+            console.log("Azure upload failed: ", uploadErr.message);
+          }
 
           zip.file(imageFileName, buffer1);
         } catch (err) {
