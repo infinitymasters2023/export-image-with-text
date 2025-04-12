@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
           row.ImageFileName = imageFileName;
 
           try {
-            // const imageUrl = await uploadBufferToAzure(buffer1, imageFileName, "image/jpeg");
+            const imageUrl = await uploadBufferToAzure(buffer1, imageFileName, "image/jpeg");
 
             const result = await sql.query`
           INSERT INTO Iapl_Generated_Images_For_Amazon (
@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
             ${row.BrandFontWeight},
             ${row.PriceRangeFontWeight},
             ${row.FontFamily},
-            ${imageFileName} -- Assuming this is the URL or path to the image
+            ${imageUrl} -- Assuming this is the URL or path to the image
           )
         `;
 
