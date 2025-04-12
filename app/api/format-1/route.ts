@@ -7,6 +7,7 @@ import JSZip from "jszip";
 import { writeFile } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
+import { uploadBufferToAzure } from "@/app/lib/azureBlob";
 
 async function safeLoadImageFromUrl(url: string): Promise<Image | null> {
   try {
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
       TextColor: string;
       PriceBackgroundColor: string;
       TextBackgroundColor: string;
+      BrandBackgroundColor: string;
       TextFontSize: number;
       BrandFontSize: number;
       PriceFontSize: number;
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
           ctx.textAlign = "center";
           const logoImage = await safeLoadImageFromUrl(row.Logo);
           if (logoImage) {
-            ctx.drawImage(logoImage, (width - 700) / 2, 50, 700, 700);
+            ctx.drawImage(logoImage, (width - 960) / 2, -50, 960, 1000);
           } else {
             ctx.fillText("Failed to load logo", 50, 300);
           }
@@ -111,7 +113,7 @@ export async function POST(req: NextRequest) {
           ctx.textAlign = "left";
           const ProductImage = await safeLoadImageFromUrl(row.ProductImage);
           if (ProductImage) {
-            ctx.drawImage(ProductImage, 950, 600, 400, 400);
+            ctx.drawImage(ProductImage, 950, 650, 400, 400);
           } else {
             ctx.fillText("Failed to load logo", 50, 300);
           }
@@ -120,15 +122,17 @@ export async function POST(req: NextRequest) {
           ctx.font = fontText; // You can change size/font per line too
           ctx.textAlign = "center";
           ctx.fillStyle = row.TextBackgroundColor || "#e63946";
-          ctx.fillRect(0, 1000, width, 130);
+          ctx.fillRect(0, 1050, width, 150);
           ctx.fillStyle = row.TextColor || "#FCD34D";
-          ctx.fillText(row.Text, width / 2, 1100);
+          ctx.fillText(row.Text, width / 2, 1160);
 
           //Second line
           ctx.font = fontBrand;
+          ctx.fillStyle =  row.BrandBackgroundColor || "#e63946";
+          ctx.fillRect(0, 1200, width, 150);
           ctx.fillStyle = row.BrandColor || "#457b9d";
           ctx.textAlign = "center";
-          ctx.fillText(row.Brand, width / 2, 1275);
+          ctx.fillText(row.Brand, width / 2, 1310);
 
           // Third line in green
           ctx.font = fontPrice;
@@ -144,6 +148,13 @@ export async function POST(req: NextRequest) {
 
           const imageFileName = `Image_${index + 1}.jpeg`;
           row.ImageFileName = imageFileName;
+
+          // try {
+          //   const imageUrl = await uploadBufferToAzure(buffer1, imageFileName, "image/jpeg");
+          //   console.log("Image uploaded to Azure:", index+1);
+          // } catch (uploadErr: any) {
+          //   console.log("Azure upload failed: ", uploadErr.message);
+          // }
 
           zip.file(imageFileName, buffer1);
         } catch (err) {
