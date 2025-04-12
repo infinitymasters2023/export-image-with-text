@@ -51,6 +51,13 @@ export async function POST(req: NextRequest) {
       TextColor: string;
       PriceBackgroundColor: string;
       TextBackgroundColor: string;
+      TextFontSize: number;
+      BrandFontSize: number;
+      PriceFontSize: number;
+      TextFontWeight: number;
+      BrandFontWeight: number;
+      PriceFontWeight: number;
+      FontFamily: string;
     }>(sheet);
 
     if (!rows.length) {
@@ -71,13 +78,27 @@ export async function POST(req: NextRequest) {
           const canvas = createCanvas(width, height);
           const ctx = canvas.getContext("2d");
 
-          ctx.font = "bold 60px Sans";
+          const fontWeightText = row?.TextFontWeight || 700; // Any number from 100 to 900
+          const fontSizeText = `${row?.TextFontSize || 100}px`;
+          const fontFamilyText = row?.FontFamily || "Sans";
+          const fontText = `${fontWeightText} ${fontSizeText} ${fontFamilyText}`;
+
+          const fontWeightBrand = row?.BrandFontWeight || 700; // Any number from 100 to 900
+          const fontSizeBrand = `${row?.BrandFontSize || 90}px`;
+          const fontFamilyBrand = row?.FontFamily || "Sans";
+          const fontBrand = `${fontWeightBrand} ${fontSizeBrand} ${fontFamilyBrand}`;
+
+          const fontWeightPrice = row?.PriceFontWeight || 700; // Any number from 100 to 900
+          const fontSizePrice = `${row?.PriceFontSize || 90}px`;
+          const fontFamilyPrice = row?.FontFamily || "Sans";
+          const fontPrice = `${fontWeightPrice} ${fontSizePrice} ${fontFamilyPrice}`;
+
           // Draw background
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, width, height);
 
-          // Draw text
-          ctx.fillStyle = "#000000";
+
+          // Draw Logo
           ctx.textAlign = "center";
           const logoImage = await safeLoadImageFromUrl(row.Logo);
           if (logoImage) {
@@ -86,37 +107,39 @@ export async function POST(req: NextRequest) {
             ctx.fillText("Failed to load logo", 50, 300);
           }
 
+          //Draw Product Image
           ctx.textAlign = "left";
           const ProductImage = await safeLoadImageFromUrl(row.ProductImage);
           if (ProductImage) {
-            ctx.drawImage(ProductImage, 900, 600, 400, 400);
+            ctx.drawImage(ProductImage, 950, 600, 400, 400);
           } else {
             ctx.fillText("Failed to load logo", 50, 300);
           }
 
-          // Set common font
-          ctx.font = "bold 100px Sans"; // You can change size/font per line too
-          ctx.textAlign = "center";
           // First line in red
+          ctx.font = fontText; // You can change size/font per line too
+          ctx.textAlign = "center";
           ctx.fillStyle = row.TextBackgroundColor || "#e63946";
           ctx.fillRect(0, 1000, width, 130);
           ctx.fillStyle = row.TextColor || "#FCD34D";
           ctx.fillText(row.Text, width / 2, 1100);
 
-          ctx.font = "bold 90px Sans";
+          //Second line
+          ctx.font = fontBrand;
           ctx.fillStyle = row.BrandColor || "#457b9d";
           ctx.textAlign = "center";
           ctx.fillText(row.Brand, width / 2, 1275);
 
           // Third line in green
+          ctx.font = fontPrice;
+          ctx.textAlign = "center";
           ctx.fillStyle = row.PriceBackgroundColor || "#7C3AED";
-          ctx.fillRect(0, 1350, width, 130);
-
-          ctx.font = "bold 100px Sans";
+          ctx.fillRect(0, 1350, width, 150);
           ctx.fillStyle = row.PriceColor || "#FCD34D";
-          ctx.fillText(row.Price, width / 2, 1450);
+          ctx.fillText(row.Price, width / 2, 1460);
+          
 
-          // Export as PNG
+          // Export as JPEG
           const buffer1 = canvas.toBuffer("image/jpeg");
 
           const imageFileName = `Image_${index + 1}.jpeg`;
@@ -129,7 +152,6 @@ export async function POST(req: NextRequest) {
       })
     );
 
-
     const updatedSheet = XLSX.utils.json_to_sheet(rows);
     const updatedWorkbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(updatedWorkbook, updatedSheet, "Sheet1");
@@ -139,7 +161,7 @@ export async function POST(req: NextRequest) {
       bookType: "xlsx",
     });
 
-    zip.file("Updated_"+file.name, excelBuffer);
+    zip.file("Updated_" + file.name, excelBuffer);
 
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
 
